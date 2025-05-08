@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Products with Modal and Skeleton</title>
-
+  <title>Scroll Hide/Show Cards</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -24,6 +23,13 @@
       padding: 20px;
       margin: 15px;
       text-align: center;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .card.hidden {
+      opacity: 0;
+      transform: scale(0.9);
+      pointer-events: none;
     }
 
     .card img {
@@ -116,6 +122,7 @@
 <body>
 
 <div id="colum1"></div>
+<div id="scrollObserver" style="height: 1px;"></div>
 
 <div id="productModal" class="modal">
   <div class="modal-content">
@@ -130,28 +137,44 @@
   let modalBody = document.getElementById('modalBody');
   let closeBtn = document.getElementById('modalCloseBtn');
 
-  for (let i = 0; i < 8; i++) {
-    const skeleton = document.createElement('div');
-    skeleton.classList.add('skeleton-card');
-    skeleton.innerHTML = `
-      <div class="skeleton-img"></div>
-      <div class="skeleton-text"></div>
-      <div class="skeleton-text" style="width: 40%;"></div>
-    `;
-    cardContainer.appendChild(skeleton);
+  let allProducts = [];
+  let currentIndex = 0;
+  const batchSize = 10;
+
+  let lastScrollTop = 0;
+
+  closeBtn.onclick = () => modal.style.display = "none";
+  window.onclick = e => { if (e.target == modal) modal.style.display = "none"; }
+
+  function showSkeletons(count) {
+    for (let i = 0; i < count; i++) {
+      const skeleton = document.createElement('div');
+      skeleton.classList.add('skeleton-card');
+      skeleton.innerHTML = `
+        <div class="skeleton-img"></div>
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text" style="width: 40%;"></div>
+      `;
+      cardContainer.appendChild(skeleton);
+    }
   }
 
-  fetch('https://dummyjson.com/products')
-    .then(res => res.json())
-    .then(function (json) {
-      cardContainer.innerHTML = '';
+  function removeSkeletons() {
+    document.querySelectorAll('.skeleton-card').forEach(s => s.remove());
+  }
 
-      for (let i = 0; i < json.products.length; i++) {
-        let product = json.products[i];
+  function renderProducts() {
+    if (currentIndex >= allProducts.length) return;
 
+    showSkeletons(batchSize);
+
+    setTimeout(() => {
+      removeSkeletons();
+      const nextBatch = allProducts.slice(currentIndex, currentIndex + batchSize);
+
+      nextBatch.forEach(product => {
         const parent = document.createElement('div');
         parent.classList.add('card');
-
         parent.innerHTML = `
           <img data-src="${product.thumbnail}" alt="Product Image" loading="lazy">
           <h2>${product.title}</h2>
@@ -161,13 +184,10 @@
         `;
 
         let img = parent.querySelector('img');
-        img.onload = () => {
-          img.style.opacity = 1;
-        };
+        img.onload = () => { img.style.opacity = 1; };
         img.src = img.getAttribute('data-src');
 
-        let btn = parent.querySelector('button');
-        btn.addEventListener('click', function () {
+        parent.querySelector('button').addEventListener('click', () => {
           modalBody.innerHTML = `
             <h2>${product.title}</h2>
             <img src="${product.thumbnail}" style="width:100px;height:auto;margin:10px 0;">
@@ -180,18 +200,49 @@
         });
 
         cardContainer.appendChild(parent);
-      }
+
+        cardObserver.observe(parent);
+      });
+
+      currentIndex += batchSize;
+    }, 300);
+  }
+
+  fetch('https://dummyjson.com/products?limit=100')
+    .then(res => res.json())
+    .then(json => {
+      allProducts = json.products;
+      renderProducts();
     });
 
-  closeBtn.onclick = function () {
-    modal.style.display = "none";
-  }
-
-  window.onclick = function (event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
+  const observerTarget = document.getElementById('scrollObserver');
+  const scrollObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      renderProducts();
     }
-  }
+  }, { threshold: 1 });
+
+  scrollObserver.observe(observerTarget);
+
+  const cardObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const card = entry.target;
+      const scrollTop = window.scrollY;
+
+      if (!entry.isIntersecting) {
+        if (scrollTop > lastScrollTop) {
+          card.classList.add('hidden'); 
+        }
+      } else {
+        card.classList.remove('hidden'); 
+      }
+
+      lastScrollTop = scrollTop;
+    });
+  }, {
+    root: null,
+    threshold: 0.1
+  });
 </script>
 
 </body>
