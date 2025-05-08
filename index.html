@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Products with Modal and Skeleton Loading</title>
+  <title>Products with Modal and Skeleton</title>
 
   <style>
     body {
@@ -28,8 +28,13 @@
 
     .card img {
       width: 150px;
-      height: auto;
+      height: 150px;
       border-radius: 8px;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto 10px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
     }
 
     .card button {
@@ -139,7 +144,7 @@
   fetch('https://dummyjson.com/products')
     .then(res => res.json())
     .then(function (json) {
-      cardContainer.innerHTML = ''; // Clear skeletons
+      cardContainer.innerHTML = '';
 
       for (let i = 0; i < json.products.length; i++) {
         let product = json.products[i];
@@ -148,12 +153,18 @@
         parent.classList.add('card');
 
         parent.innerHTML = `
-          <img src="${product.thumbnail}" alt="Product Image">
+          <img data-src="${product.thumbnail}" alt="Product Image" loading="lazy">
           <h2>${product.title}</h2>
           <p>Price: $${product.price}</p>
           <p>Category: ${product.category}</p>
           <button>View More Details</button>
         `;
+
+        let img = parent.querySelector('img');
+        img.onload = () => {
+          img.style.opacity = 1;
+        };
+        img.src = img.getAttribute('data-src');
 
         let btn = parent.querySelector('button');
         btn.addEventListener('click', function () {
