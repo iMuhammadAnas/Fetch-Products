@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Products with Modal</title>
+  <title>Products with Modal and Skeleton Loading</title>
 
   <style>
     body {
       font-family: Arial, sans-serif;
     }
+
     #colum1 {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       margin-top: 20px;
     }
+
     .card {
       background: #f9f9f9;
       border: 1px solid #ccc;
@@ -23,11 +25,13 @@
       margin: 15px;
       text-align: center;
     }
+
     .card img {
       width: 150px;
       height: auto;
       border-radius: 8px;
     }
+
     .card button {
       margin-top: 10px;
       padding: 5px 10px;
@@ -37,7 +41,7 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    /* Modal CSS */
+
     .modal {
       display: none;
       position: fixed;
@@ -49,6 +53,7 @@
       overflow: auto;
       background-color: rgba(0,0,0,0.6);
     }
+
     .modal-content {
       background-color: white;
       margin: 10% auto;
@@ -59,6 +64,7 @@
       border-radius: 8px;
       position: relative;
     }
+
     .close {
       color: #aaa;
       position: absolute;
@@ -68,6 +74,37 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    .skeleton-card {
+      background: #eee;
+      border-radius: 8px;
+      width: 250px;
+      height: 300px;
+      margin: 15px;
+      animation: pulse 1.5s infinite;
+    }
+
+    .skeleton-img {
+      width: 150px;
+      height: 100px;
+      background: #ddd;
+      margin: 20px auto 10px;
+      border-radius: 8px;
+    }
+
+    .skeleton-text {
+      height: 20px;
+      width: 60%;
+      background: #ddd;
+      margin: 10px auto;
+      border-radius: 4px;
+    }
+
+    @keyframes pulse {
+      0% { background-color: #f0f0f0; }
+      50% { background-color: #e0e0e0; }
+      100% { background-color: #f0f0f0; }
+    }
   </style>
 </head>
 
@@ -75,10 +112,9 @@
 
 <div id="colum1"></div>
 
-<!-- Modal -->
 <div id="productModal" class="modal">
   <div class="modal-content">
-    <span id="modalCloseBtn">&times;</span>
+    <span id="modalCloseBtn" class="close">&times;</span>
     <div id="modalBody"></div>
   </div>
 </div>
@@ -89,10 +125,22 @@
   let modalBody = document.getElementById('modalBody');
   let closeBtn = document.getElementById('modalCloseBtn');
 
-  // Fetch products
+  for (let i = 0; i < 8; i++) {
+    const skeleton = document.createElement('div');
+    skeleton.classList.add('skeleton-card');
+    skeleton.innerHTML = `
+      <div class="skeleton-img"></div>
+      <div class="skeleton-text"></div>
+      <div class="skeleton-text" style="width: 40%;"></div>
+    `;
+    cardContainer.appendChild(skeleton);
+  }
+
   fetch('https://dummyjson.com/products')
     .then(res => res.json())
     .then(function (json) {
+      cardContainer.innerHTML = ''; // Clear skeletons
+
       for (let i = 0; i < json.products.length; i++) {
         let product = json.products[i];
 
@@ -107,9 +155,8 @@
           <button>View More Details</button>
         `;
 
-        // Button functionality
         let btn = parent.querySelector('button');
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
           modalBody.innerHTML = `
             <h2>${product.title}</h2>
             <img src="${product.thumbnail}" style="width:100px;height:auto;margin:10px 0;">
@@ -125,12 +172,11 @@
       }
     });
 
-  // Close modal
-  closeBtn.onclick = function() {
+  closeBtn.onclick = function () {
     modal.style.display = "none";
   }
 
-  window.onclick = function(event) {
+  window.onclick = function (event) {
     if (event.target == modal) {
       modal.style.display = "none";
     }
